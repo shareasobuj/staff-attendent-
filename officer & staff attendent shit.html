@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>কর্মচারী হাজিরা অ্যাপ</title>
+  <style>
+    /* --- Basic Reset & Typography --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem;
+      background: #fafafa;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: #ffeb3b; /* Yellow accent */
+      border-radius: 0.5rem;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      padding: 0.5rem 0.75rem;
+      margin-left: 0.25rem;
+      border: 1px solid #ccc;
+      border-radius: 0.375rem;
+      min-width: 200px;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.375rem;
+      background: #ffeb3b; /* Yellow accent */
+      cursor: pointer;
+      font-weight: 600;
+      margin-left: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      transition: transform 0.1s ease;
+    }
+    button:hover { transform: translateY(-2px); }
+
+    /* --- Table Styling --- */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 400px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    th {
+      background: #fff9c4; /* Light yellow */
+    }
+    tr.present { background: #e8f5e9; } /* Greenish for present */
+    tr.absent { background: #ffebee; } /* Reddish for absent */
+
+    /* --- Responsive Grid Layout --- */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .actions {
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>কর্মচারী হাজিরা অ্যাপ</h1>
+
+  <div class="controls">
+    <div>
+      <label for="date">তারিখ:</label>
+      <input type="date" id="date" />
+    </div>
+
+    <div>
+      <label for="employeeName">নতুন কর্মচারী যোগ করুন:</label>
+      <input type="text" id="employeeName" placeholder="নাম লিখুন" />
+      <button id="addEmployeeBtn">যোগ করুন</button>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table id="attendanceTable">
+      <thead>
+        <tr>
+          <th>কর্মচারীর নাম</th>
+          <th>হাজিরা</th>
+        </tr>
+      </thead>
+      <tbody id="attendanceBody"></tbody>
+    </table>
+  </div>
+
+  <div class="actions">
+    <button id="saveBtn">সংরক্ষণ করুন</button>
+  </div>
+
+  <script>
+    /* ------------------- Data ------------------- */
+    const employees = JSON.parse(localStorage.getItem("employees")) || [];
+    const attendance = JSON.parse(localStorage.getItem("attendance")) || {};
+
+    /* ------------------- Elements ------------------- */
+    const dateInput = document.getElementById("date");
+    const employeeNameInput = document.getElementById("employeeName");
+    const addEmployeeBtn = document.getElementById("addEmployeeBtn");
+    const attendanceBody = document.getElementById("attendanceBody");
+    const saveBtn = document.getElementById("saveBtn");
+
+    /* ------------------- Initialization ------------------- */
+    dateInput.valueAsDate = new Date(); // Default today
+    renderTable();
+
+    /* ------------------- Functions ------------------- */
+    function renderTable() {
+      attendanceBody.innerHTML = "";
+      employees.forEach((name) => {
+        const tr = document.createElement("tr");
+
+        /* Name Cell */
+        const tdName = document.createElement("td");
+        tdName.textContent = name;
+        tr.appendChild(tdName);
+
+        /* Attendance Checkbox */
+        const tdStatus = document.createElement("td");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = getStatus(name);
+        checkbox.addEventListener("change", () => {
+          setStatus(name, checkbox.checked);
+          updateRowStyle(tr, checkbox.checked);
+        });
+        tdStatus.appendChild(checkbox);
+        tr.appendChild(tdStatus);
+
+        /* Initial Row Styling */
+        updateRowStyle(tr, checkbox.checked);
+        attendanceBody.appendChild(tr);
+      });
+    }
+
+    function updateRowStyle(row, isPresent) {
+      row.className = isPresent ? "present" : "absent";
+    }
+
+    function getStatus(name) {
+      const dateKey = dateInput.value;
+      return attendance[dateKey]?.[name] || false;
+    }
+
+    function setStatus(name, status) {
+      const dateKey = dateInput.value;
+      if (!attendance[dateKey]) attendance[dateKey] = {};
+      attendance[dateKey][name] = status;
+    }
+
+    /* ------------------- Event Listeners ------------------- */
+    addEmployeeBtn.addEventListener("click", () => {
+      const name = employeeNameInput.value.trim();
+      if (!name) return alert("নাম লিখুন।");
+      if (employees.includes(name)) return alert("এই নাম ইতিমধ্যে তালিকায় আছে।");
+      employees.push(name);
+      localStorage.setItem("employees", JSON.stringify(employees));
+      employeeNameInput.value = "";
+      renderTable();
+    });
+
+    saveBtn.addEventListener("click", () => {
+      localStorage.setItem("attendance", JSON.stringify(attendance));
+      alert("হাজিরা সংরক্ষণ হয়েছে!");
+    });
+
+    dateInput.addEventListener("change", renderTable);
+  </script>
+</body>
+</html>
